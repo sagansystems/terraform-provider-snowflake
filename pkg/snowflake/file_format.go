@@ -27,9 +27,15 @@ const (
 
 // FileFormatBuilder abstracts the creation of SQL queries for a Snowflake file format
 type FileFormatBuilder struct {
-	name   string
-	db     string
-	schema string
+	name           string
+	db             string
+	schema         string
+	fileFormatType string
+	comment        string
+	compression    string
+	binaryAsText   bool
+	trimSpace      bool
+	nullIf         []string
 }
 
 // QualifiedName prepends the db and schema and escapes everything nicely
@@ -39,6 +45,42 @@ func (fb *FileFormatBuilder) QualifiedName() string {
 	n.WriteString(fmt.Sprintf(`"%v"."%v"."%v"`, fb.db, fb.schema, fb.name))
 
 	return n.String()
+}
+
+// WithType adds a type to the FileFormatBuilder
+func (fb *FileFormatBuilder) WithType(t string) *FileFormatBuilder {
+	fb.fileFormatType = t
+	return fb
+}
+
+// WithComment adds a comment to the FileFormatBuilder
+func (fb *FileFormatBuilder) WithComment(comment string) *FileFormatBuilder {
+	fb.comment = comment
+	return fb
+}
+
+// WithCompression adds a compression to the FileFormatBuilder
+func (fb *FileFormatBuilder) WithCompression(compression string) *FileFormatBuilder {
+	fb.compression = compression
+	return fb
+}
+
+// WithBinaryAsText adds binary as text to the FileFormatBuilder
+func (fb *FileFormatBuilder) WithBinaryAsText(binaryAsText bool) *FileFormatBuilder {
+	fb.binaryAsText = binaryAsText
+	return fb
+}
+
+// WithTrimSpace adds trim space to the FileFormatBuilder
+func (fb *FileFormatBuilder) WithTrimSpace(trimSpace bool) *FileFormatBuilder {
+	fb.trimSpace = trimSpace
+	return fb
+}
+
+// WithNullIf adds null if to the FileFormatBuilder
+func (fb *FileFormatBuilder) WithNullIf(nullIf []string) *FileFormatBuilder {
+	fb.nullIf = nullIf
+	return fb
 }
 
 // FileFormat returns a pointer to a Builder that abstracts the DDL operations for a stage.
@@ -53,6 +95,39 @@ func FileFormat(name, db, schema string) *FileFormatBuilder {
 		db:     db,
 		schema: schema,
 	}
+}
+
+// Create returns the SQL query that will create a new file format.
+func (fb *FileFormatBuilder) Create() string {
+	builder := strings.Builder{}
+	builder.WriteString(`CREATE FILE FORMAT`)
+	builder.WriteString(fb.QualifiedName())
+
+	if fb.fileFormatType == "" {
+		builder.WriteString(fmt.Sprintf(` TYPE = "%v"`, fb.fileFormatType))
+	}
+
+	if fb.comment == "" {
+		builder.WriteString(fmt.Sprintf(` COMMENT = "%v"`, EscapeString(fb.comment)))
+	}
+
+	if fb.compression == "" {
+		builder.WriteString(fmt.Sprintf(` COMPRESSION = "%v"`, fb.compression))
+	}
+
+	builder.WriteString(fmt.Sprintf(` BINARY_AS_TEXT = "%v"`, fb.binaryAsText))
+
+	builder.WriteString(fmt.Sprintf(` TRIM_SPACE = "%v"`, fb.trimSpace))
+
+	if len(fb.nullIf) > 0 {
+		nulls := make([]string, 0, len(fb.nullIf))
+		for _, n := range fb.nullIf {
+			nulls = append(nulls, fmt.Sprintf(`'%v'`, n))
+		}
+		builder.WriteString(fmt.Sprintf(` NULL_IF = (%v)`, EscapeString(strings.Join(fb.nullIf, ", "))))
+	}
+
+	return builder.String()
 }
 
 // Describe returns the SQL query that will describe a file format.

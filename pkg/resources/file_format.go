@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/pkg/errors"
 
 	"github.com/chanzuckerberg/terraform-provider-snowflake/pkg/snowflake"
 )
@@ -147,13 +148,65 @@ func fileFormatIDFromString(stringID string) (*fileFormatID, error) {
 // FileFormat returns a pointer to the resource representing a file format
 func FileFormat() *schema.Resource {
 	return &schema.Resource{
-		Read: ReadFileFormat,
+		Create: CreateFileFormat,
+		Read:   ReadFileFormat,
 
 		Schema: fileFormatSchema,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 	}
+}
+
+// CreateFileFormat implements schema.CreateFunc
+func CreateFileFormat(data *schema.ResourceData, m interface{}) error {
+	db := m.(*sql.DB)
+	name := data.Get("name").(string)
+	database := data.Get("database").(string)
+	schema := data.Get("schema").(string)
+
+	builder := snowflake.FileFormat(name, database, schema)
+
+	fileFormatType := data.Get("type").(string)
+	builder.WithType(fileFormatType)
+
+	// Set optionals
+	if v, ok := data.GetOk("comment"); ok {
+		builder.WithComment(v.(string))
+	}
+
+	if v, ok := data.GetOk("compression"); ok {
+		builder.WithCompression(v.(string))
+	}
+
+	if v, ok := data.GetOk("binary_as_text"); ok {
+		builder.WithBinaryAsText(v.(bool))
+	}
+
+	if v, ok := data.GetOk("trim_space"); ok {
+		builder.WithTrimSpace(v.(bool))
+	}
+
+	if v, ok := data.GetOk("null_if"); ok {
+		builder.WithNullIf(v.([]string))
+	}
+
+	if err := snowflake.Exec(db, builder.Create()); err != nil {
+		return errors.Wrapf(err, "error creating file format %v", name)
+	}
+
+	id := &fileFormatID{
+		DatabaseName:   database,
+		SchemaName:     schema,
+		FileFormatName: name,
+	}
+	idStr, err := id.String()
+	if err != nil {
+		return err
+	}
+	data.SetId(idStr)
+
+	return ReadFileFormat(data, m)
 }
 
 // ReadStage implements schema.ReadFunc
