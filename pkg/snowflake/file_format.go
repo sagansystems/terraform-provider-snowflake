@@ -114,6 +114,35 @@ func (fb *FileFormatBuilder) Create() string {
 	return builder.String()
 }
 
+// ChangeComment returns the SQL query that will update the comment on the file format.
+func (fb *FileFormatBuilder) ChangeComment(comment string) string {
+	return fmt.Sprintf(`ALTER FILE FORMAT %v SET COMMENT = '%v'`, fb.QualifiedName(), comment)
+}
+
+// ChangeComment returns the SQL query that will update the compression on the file format.
+func (fb *FileFormatBuilder) ChangeCompression(compression string) string {
+	return fmt.Sprintf(`ALTER FILE FORMAT %v SET COMPRESSION = '%v'`, fb.QualifiedName(), compression)
+}
+
+// ChangeComment returns the SQL query that will update binary as text on the file format.
+func (fb *FileFormatBuilder) ChangeBinaryAsText(binaryAsText bool) string {
+	return fmt.Sprintf(`ALTER FILE FORMAT %v SET BINARY_AS_TEXT = %v`, fb.QualifiedName(), binaryAsText)
+}
+
+// ChangeComment returns the SQL query that will update trim space on the file format.
+func (fb *FileFormatBuilder) ChangeTrimSpace(trimSpace bool) string {
+	return fmt.Sprintf(`ALTER FILE FORMAT %v SET TRIM_SPACE = %v`, fb.QualifiedName(), trimSpace)
+}
+
+// ChangeComment returns the SQL query that will update null if on the file format.
+func (fb *FileFormatBuilder) ChangeNullIf(nullIf []string) string {
+	nulls := make([]string, len(nullIf))
+	for i, n := range nullIf {
+		nulls[i] = fmt.Sprintf(`'%v'`, EscapeString(n))
+	}
+	return fmt.Sprintf(`ALTER FILE FORMAT %v SET NULL_IF = (%v)`, fb.QualifiedName(), strings.Join(nulls, ","))
+}
+
 // Drop returns the SQL query that will drop a file format.
 func (fb *FileFormatBuilder) Drop() string {
 	return fmt.Sprintf(`DROP FILE FORMAT %v`, fb.QualifiedName())
