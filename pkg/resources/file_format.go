@@ -56,11 +56,12 @@ var fileFormatSchema = map[string]*schema.Schema{
 		Type:        schema.TypeString,
 		Optional:    true,
 		Description: "Specifies a comment for the file format.",
+		ForceNew:    true,
 	},
 	"compression": {
 		Type:        schema.TypeString,
 		Optional:    true,
-		Default:     "auto",
+		Default:     "AUTO",
 		Description: "Specifies the current compression algorithm for columns in the Parquet files.",
 		ValidateFunc: func(val interface{}, _ string) ([]string, []error) {
 			c := strings.ToLower(val.(string))
@@ -72,25 +73,28 @@ var fileFormatSchema = map[string]*schema.Schema{
 				return nil, []error{fmt.Errorf("%s is not a supported compression algorithm", val)}
 			}
 		},
+		ForceNew: true,
 	},
 	"binary_as_text": {
 		Type:        schema.TypeBool,
 		Optional:    true,
 		Default:     true,
 		Description: "Boolean that specifies whether to interpret columns with no defined logical data type as UTF-8 text. When set to FALSE, Snowflake interprets these columns as binary data.",
+		ForceNew:    true,
 	},
 	"trim_space": {
 		Type:        schema.TypeBool,
 		Optional:    true,
 		Default:     false,
 		Description: "Applied only when loading Parquet data into separate columns (i.e. using the MATCH_BY_COLUMN_NAME copy option or a COPY transformation). Boolean that specifies whether to remove leading and trailing white space from strings.",
+		ForceNew:    true,
 	},
 	"null_if": {
 		Type:        schema.TypeList,
 		Elem:        &schema.Schema{Type: schema.TypeString},
 		Optional:    true,
-		Default:     []string{"\\N"},
 		Description: "Applied only when loading Parquet data into separate columns (i.e. using the MATCH_BY_COLUMN_NAME copy option or a COPY transformation). String used to convert to and from SQL NULL. Snowflake replaces these strings in the data load source with SQL NULL.",
+		ForceNew:    true,
 	},
 }
 
@@ -144,6 +148,7 @@ func FileFormat() *schema.Resource {
 	return &schema.Resource{
 		Create: CreateFileFormat,
 		Read:   ReadFileFormat,
+		Delete: DeleteFileFormat,
 
 		Schema: fileFormatSchema,
 		Importer: &schema.ResourceImporter{
@@ -153,8 +158,8 @@ func FileFormat() *schema.Resource {
 }
 
 // CreateFileFormat implements schema.CreateFunc
-func CreateFileFormat(data *schema.ResourceData, m interface{}) error {
-	db := m.(*sql.DB)
+func CreateFileFormat(data *schema.ResourceData, meta interface{}) error {
+	db := meta.(*sql.DB)
 	name := data.Get("name").(string)
 	database := data.Get("database").(string)
 	schema := data.Get("schema").(string)
@@ -182,7 +187,16 @@ func CreateFileFormat(data *schema.ResourceData, m interface{}) error {
 	}
 
 	if v, ok := data.GetOk("null_if"); ok {
-		builder.WithNullIf(v.([]string))
+		ns := v.([]interface{})
+		nulls := make([]string, len(ns))
+		for i, n := range ns {
+			if n == nil {
+				nulls[i] = ""
+			} else {
+				nulls[i] = n.(string)
+			}
+		}
+		builder.WithNullIf(nulls)
 	}
 
 	if err := snowflake.Exec(db, builder.Create()); err != nil {
@@ -200,7 +214,7 @@ func CreateFileFormat(data *schema.ResourceData, m interface{}) error {
 	}
 	data.SetId(idStr)
 
-	return ReadFileFormat(data, m)
+	return ReadFileFormat(data, meta)
 }
 
 // ReadStage implements schema.ReadFunc
@@ -236,15 +250,15 @@ func ReadFileFormat(data *schema.ResourceData, metadata interface{}) error {
 		return err
 	}
 
-	if err := data.Set("commnet", ffMeta.Comment); err != nil {
+	if err := data.Set("comment", ffMeta.Comment); err != nil {
 		return err
 	}
 
-	if err := data.Set("type", string(ffData.Type)); err != nil {
+	if err := data.Set("type", ffData.Type); err != nil {
 		return err
 	}
 
-	if err := data.Set("compression", string(ffData.Compression)); err != nil {
+	if err := data.Set("compression", ffData.Compression); err != nil {
 		return err
 	}
 
@@ -259,6 +273,25 @@ func ReadFileFormat(data *schema.ResourceData, metadata interface{}) error {
 	if err := data.Set("null_if", ffData.NullIf); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+// DeleteFileFormat implements schema.DeleteFunc
+func DeleteFileFormat(data *schema.ResourceData, meta interface{}) error {
+	db := meta.(*sql.DB)
+	fileFormatID, err := fileFormatIDFromString(data.Id())
+	if err != nil {
+		return err
+	}
+
+	builder := snowflake.FileFormat(fileFormatID.FileFormatName, fileFormatID.DatabaseName, fileFormatID.SchemaName)
+
+	if err := snowflake.Exec(db, builder.Drop()); err != nil {
+		return errors.Wrapf(err, "error deleting file format %v", data.Id())
+	}
+
+	data.SetId("")
 
 	return nil
 }

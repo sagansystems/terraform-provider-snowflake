@@ -87,31 +87,36 @@ func (fb *FileFormatBuilder) Create() string {
 	builder.WriteString(`CREATE FILE FORMAT`)
 	builder.WriteString(fb.QualifiedName())
 
-	if fb.fileFormatType == "" {
+	if fb.fileFormatType != "" {
 		builder.WriteString(fmt.Sprintf(` TYPE = "%v"`, fb.fileFormatType))
 	}
 
-	if fb.comment == "" {
+	if fb.comment != "" {
 		builder.WriteString(fmt.Sprintf(` COMMENT = "%v"`, EscapeString(fb.comment)))
 	}
 
-	if fb.compression == "" {
+	if fb.compression != "" {
 		builder.WriteString(fmt.Sprintf(` COMPRESSION = "%v"`, fb.compression))
 	}
 
-	builder.WriteString(fmt.Sprintf(` BINARY_AS_TEXT = "%v"`, fb.binaryAsText))
+	builder.WriteString(fmt.Sprintf(` BINARY_AS_TEXT = %v`, fb.binaryAsText))
 
-	builder.WriteString(fmt.Sprintf(` TRIM_SPACE = "%v"`, fb.trimSpace))
+	builder.WriteString(fmt.Sprintf(` TRIM_SPACE = %v`, fb.trimSpace))
 
 	if len(fb.nullIf) > 0 {
-		nulls := make([]string, 0, len(fb.nullIf))
-		for _, n := range fb.nullIf {
-			nulls = append(nulls, fmt.Sprintf(`'%v'`, n))
+		nulls := make([]string, len(fb.nullIf))
+		for i, n := range fb.nullIf {
+			nulls[i] = fmt.Sprintf(`'%v'`, EscapeString(n))
 		}
-		builder.WriteString(fmt.Sprintf(` NULL_IF = (%v)`, EscapeString(strings.Join(fb.nullIf, ", "))))
+		builder.WriteString(fmt.Sprintf(` NULL_IF = (%v)`, strings.Join(nulls, ",")))
 	}
 
 	return builder.String()
+}
+
+// Drop returns the SQL query that will drop a file format.
+func (fb *FileFormatBuilder) Drop() string {
+	return fmt.Sprintf(`DROP FILE FORMAT %v`, fb.QualifiedName())
 }
 
 // Describe returns the SQL query that will describe a file format.
@@ -121,7 +126,7 @@ func (fb *FileFormatBuilder) Describe() string {
 
 // Show returns the SQL query that will show a file format.
 func (fb *FileFormatBuilder) Show() string {
-	return fmt.Sprintf(`SHOW STAGES LIKE '%v' IN DATABASE "%v"`, fb.name, fb.db)
+	return fmt.Sprintf(`SHOW FILE FORMATS LIKE '%v' IN DATABASE "%v"`, fb.name, fb.db)
 }
 
 type fileFormatMetadata struct {
@@ -187,7 +192,15 @@ func DescFileFormat(db *sql.DB, query string) (*fileFormatData, error) {
 			result.TrimSpace = v
 		case "NULL_IF":
 			strs := strings.Trim(row.PropertyValue, "[\"]")
-			result.NullIf = strings.Split(strs, ",")
+			if len(strs) < 1 {
+				result.NullIf = nil
+			} else {
+				nulls := strings.Split(strs, ",")
+				result.NullIf = make([]string, len(nulls))
+				for i, str := range nulls {
+					result.NullIf[i] = UnescapeString(strings.TrimSpace(str))
+				}
+			}
 		}
 	}
 
