@@ -42,13 +42,10 @@ var fileFormatSchema = map[string]*schema.Schema{
 		Description: "Specifies the format of the input files (for data loading) or output files (for data unloading). Depending on the format type, additional format-specific options can be specified.",
 		ForceNew:    true,
 		ValidateFunc: func(val interface{}, _ string) ([]string, []error) {
-			t, ok := val.(snowflake.FileFormatType)
-			if !ok {
-				return nil, []error{fmt.Errorf("%s is not a supported type", val)}
-			}
+			t := strings.ToLower(val.(string))
 
 			switch t {
-			case snowflake.Parquet:
+			case "parquet":
 				return nil, nil
 			default:
 				return nil, []error{fmt.Errorf("%s is not a supported type", val)}
@@ -66,13 +63,10 @@ var fileFormatSchema = map[string]*schema.Schema{
 		Default:     "auto",
 		Description: "Specifies the current compression algorithm for columns in the Parquet files.",
 		ValidateFunc: func(val interface{}, _ string) ([]string, []error) {
-			c, ok := val.(snowflake.Compression)
-			if !ok {
-				return nil, []error{fmt.Errorf("%s is not a supported compression algorithm", val)}
-			}
+			c := strings.ToLower(val.(string))
 
 			switch c {
-			case snowflake.AUTO, snowflake.LZO, snowflake.SNAPPY, snowflake.NONE:
+			case "auto", "lzo", "snappy", "none":
 				return nil, nil
 			default:
 				return nil, []error{fmt.Errorf("%s is not a supported compression algorithm", val)}

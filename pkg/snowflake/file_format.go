@@ -9,22 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type FileFormatType string
-
-const (
-	CSV     FileFormatType = "csv" // TODO: Add support for this
-	Parquet FileFormatType = "parquet"
-)
-
-type Compression string
-
-const (
-	AUTO   Compression = "auto"
-	LZO    Compression = "lzo"
-	SNAPPY Compression = "snappy"
-	NONE   Compression = "none"
-)
-
 // FileFormatBuilder abstracts the creation of SQL queries for a Snowflake file format
 type FileFormatBuilder struct {
 	name           string
@@ -155,8 +139,8 @@ func ScanFileFormatShow(row *sqlx.Row) (*fileFormatMetadata, error) {
 }
 
 type fileFormatData struct {
-	Type         FileFormatType
-	Compression  Compression
+	Type         string
+	Compression  string
 	BinaryAsText bool
 	TrimSpace    bool
 	NullIf       []string
@@ -186,9 +170,9 @@ func DescFileFormat(db *sql.DB, query string) (*fileFormatData, error) {
 
 		switch row.Property {
 		case "TYPE":
-			result.Type = FileFormatType(row.PropertyValue)
+			result.Type = row.PropertyValue
 		case "COMPRESSION":
-			result.Compression = Compression(row.PropertyValue)
+			result.Compression = row.PropertyValue
 		case "BINARY_AS_TEXT":
 			v, err := strconv.ParseBool(row.PropertyValue)
 			if err != nil {
