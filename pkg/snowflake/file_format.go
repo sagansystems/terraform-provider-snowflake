@@ -84,7 +84,7 @@ func FileFormat(name, db, schema string) *FileFormatBuilder {
 // Create returns the SQL query that will create a new file format.
 func (fb *FileFormatBuilder) Create() string {
 	builder := strings.Builder{}
-	builder.WriteString(`CREATE FILE FORMAT`)
+	builder.WriteString(`CREATE FILE FORMAT `)
 	builder.WriteString(fb.QualifiedName())
 
 	if fb.fileFormatType != "" {
