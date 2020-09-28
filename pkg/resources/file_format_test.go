@@ -12,6 +12,7 @@ import (
 
 	"github.com/chanzuckerberg/terraform-provider-snowflake/pkg/provider"
 	"github.com/chanzuckerberg/terraform-provider-snowflake/pkg/resources"
+	"github.com/chanzuckerberg/terraform-provider-snowflake/pkg/snowflake"
 	"github.com/chanzuckerberg/terraform-provider-snowflake/pkg/testhelpers"
 )
 
@@ -21,6 +22,7 @@ const (
 	schemaName     = "test_schema"
 	fileFormatType = "parquet"
 	comment        = "This is a test"
+	compression    = "lzo"
 )
 
 func TestFileFormat(t *testing.T) {
@@ -73,6 +75,68 @@ func TestFileFormatCreate(t *testing.T) {
 		expectReadFileFormat(mock)
 
 		err := resources.CreateFileFormat(data, db)
+		r.NoError(err)
+	})
+}
+
+func TestFileFormatUpdate(t *testing.T) {
+	r := require.New(t)
+
+	data := schema.TestResourceDataRaw(t, resources.FileFormat().Schema, map[string]interface{}{
+		"name":        fileFormatName,
+		"database":    databaseName,
+		"schema":      schemaName,
+		"type":        fileFormatType,
+		"comment":     comment,
+		"compression": compression,
+	})
+	data.SetId(strings.Join([]string{databaseName, schemaName, fileFormatName}, "|"))
+	r.NotNil(data)
+
+	testhelpers.WithMockDb(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
+		mock.ExpectExec(
+			fmt.Sprintf(
+				`^ALTER FILE FORMAT "%v"."%v"."%v" SET COMMENT = "%v"$`,
+				databaseName, schemaName, fileFormatName, snowflake.EscapeString(comment),
+			),
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+
+		mock.ExpectExec(
+			fmt.Sprintf(
+				`^ALTER FILE FORMAT "%v"."%v"."%v" SET COMPRESSION = "%v"$`,
+				databaseName, schemaName, fileFormatName, compression,
+			),
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+
+		expectReadFileFormat(mock)
+
+		err := resources.UpdateFileFormat(data, db)
+		r.NoError(err)
+	})
+}
+
+func TestFileFormatDelete(t *testing.T) {
+	r := require.New(t)
+
+	data := schema.TestResourceDataRaw(t, resources.FileFormat().Schema, map[string]interface{}{
+		"name":     fileFormatName,
+		"database": databaseName,
+		"schema":   schemaName,
+		"type":     fileFormatType,
+		"comment":  comment,
+	})
+	data.SetId(strings.Join([]string{databaseName, schemaName, fileFormatName}, "|"))
+	r.NotNil(data)
+
+	testhelpers.WithMockDb(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
+		mock.ExpectExec(
+			fmt.Sprintf(
+				`^DROP FILE FORMAT "%v"."%v"."%v"$`,
+				databaseName, schemaName, fileFormatName,
+			),
+		).WillReturnResult(sqlmock.NewResult(1, 1))
+
+		err := resources.DeleteFileFormat(data, db)
 		r.NoError(err)
 	})
 }
