@@ -65,7 +65,7 @@ func TestFileFormatCreate(t *testing.T) {
 	testhelpers.WithMockDb(t, func(db *sql.DB, mock sqlmock.Sqlmock) {
 		mock.ExpectExec(
 			fmt.Sprintf(
-				`^CREATE FILE FORMAT "%v"."%v"."%v" TYPE = "%v" COMMENT = "%v" BINARY_AS_TEXT = true TRIM_SPACE = false$`,
+				`^CREATE FILE FORMAT "%v"."%v"."%v" TYPE = "%v" COMMENT = "%v"$`,
 				databaseName, schemaName, fileFormatName, fileFormatType, comment,
 			),
 		).WillReturnResult(sqlmock.NewResult(1, 1))
