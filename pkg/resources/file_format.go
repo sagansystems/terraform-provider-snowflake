@@ -60,6 +60,7 @@ var fileFormatSchema = map[string]*schema.Schema{
 	"compression": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Specifies the current compression algorithm for columns in the Parquet files.",
 		ValidateFunc: func(val interface{}, _ string) ([]string, []error) {
 			c := strings.ToLower(val.(string))
@@ -75,62 +76,74 @@ var fileFormatSchema = map[string]*schema.Schema{
 	"binary_as_text": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "Boolean that specifies whether to interpret columns with no defined logical data type as UTF-8 text. When set to FALSE, Snowflake interprets these columns as binary data.",
 	},
 	"trim_space": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "Applied only when loading Parquet data into separate columns (i.e. using the MATCH_BY_COLUMN_NAME copy option or a COPY transformation). Boolean that specifies whether to remove leading and trailing white space from strings.",
 	},
 	"null_if": {
 		Type:        schema.TypeList,
 		Elem:        &schema.Schema{Type: schema.TypeString},
 		Optional:    true,
+		Computed:    true,
 		Description: "Applied only when loading Parquet data into separate columns (i.e. using the MATCH_BY_COLUMN_NAME copy option or a COPY transformation). String used to convert to and from SQL NULL. Snowflake replaces these strings in the data load source with SQL NULL.",
 	},
 	"record_delimiter": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "One or more singlebyte or multibyte characters that separate records in an input file (data loading) or unloaded file (data unloading).",
 	},
 	"field_delimiter": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "One or more singlebyte or multibyte characters that separate fields in an input file (data loading) or unloaded file (data unloading).",
 	},
 	"file_extension": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Specifies the extension for files unloaded to a stage.",
 	},
 	"skip_header": {
 		Type:        schema.TypeInt,
 		Optional:    true,
+		Computed:    true,
 		Description: "Number of lines at the start of the file to skip.",
 	},
 	"skip_blank_lines": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "Boolean that specifies to skip any blank lines encountered in the data files.",
 	},
 	"date_format": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Defines the format of date values in the data files (data loading) or table (data unloading).",
 	},
 	"time_format": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Defines the format of time values in the data files (data loading) or table (data unloading).",
 	},
 	"timestamp_format": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Defines the format of timestamp values in the data files (data loading) or table (data unloading).",
 	},
 	"binary_format": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Defines the encoding format for binary input or output.",
 		ValidateFunc: func(val interface{}, _ string) ([]string, []error) {
 			c := strings.ToLower(val.(string))
@@ -146,46 +159,55 @@ var fileFormatSchema = map[string]*schema.Schema{
 	"escape": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Single character string used as the escape character for field values.",
 	},
 	"escape_unenclosed_field": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Single character string used as the escape character for unenclosed field values only.",
 	},
 	"field_optionally_enclosed_by": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "Character used to enclose strings.",
 	},
 	"error_on_column_count_mismatch": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "Boolean that specifies whether to generate a parsing error if the number of delimited columns (i.e. fields) in an input file does not match the number of columns in the corresponding table.",
 	},
 	"replace_invalid_characters": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "Boolean that specifies whether to replace invalid UTF-8 characters with the Unicode replacement character.",
 	},
 	"validate_utf8": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "Boolean that specifies whether to validate UTF-8 character encoding in string column data.",
 	},
 	"empty_field_as_null": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "When loading data, specifies whether to insert SQL NULL for empty fields in an input file, which are represented by two successive delimiters (e.g. ,,). When unloading data, this option is used in combination with FIELD_OPTIONALLY_ENCLOSED_BY. When FIELD_OPTIONALLY_ENCLOSED_BY = NONE, setting EMPTY_FIELD_AS_NULL = FALSE specifies to unload empty strings in tables to empty string values without quotes enclosing the field values. If set to TRUE, FIELD_OPTIONALLY_ENCLOSED_BY must specify a character to enclose strings.",
 	},
 	"skip_byte_order_mark": {
 		Type:        schema.TypeBool,
 		Optional:    true,
+		Computed:    true,
 		Description: "Boolean that specifies whether to skip the BOM (byte order mark), if present in a data file.",
 	},
 	"encoding": {
 		Type:        schema.TypeString,
 		Optional:    true,
+		Computed:    true,
 		Description: "String (constant) that specifies the character set of the source data when loading data into a table.",
 	},
 }
