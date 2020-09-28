@@ -87,6 +87,10 @@ func (fb *FileFormatBuilder) Create() string {
 	builder.WriteString(`CREATE FILE FORMAT `)
 	builder.WriteString(fb.QualifiedName())
 
+	builder.WriteString(fmt.Sprintf(` BINARY_AS_TEXT = %v`, fb.binaryAsText))
+
+	builder.WriteString(fmt.Sprintf(` TRIM_SPACE = %v`, fb.trimSpace))
+
 	if fb.fileFormatType != "" {
 		builder.WriteString(fmt.Sprintf(` TYPE = "%v"`, fb.fileFormatType))
 	}
@@ -98,10 +102,6 @@ func (fb *FileFormatBuilder) Create() string {
 	if fb.compression != "" {
 		builder.WriteString(fmt.Sprintf(` COMPRESSION = "%v"`, fb.compression))
 	}
-
-	builder.WriteString(fmt.Sprintf(` BINARY_AS_TEXT = %v`, fb.binaryAsText))
-
-	builder.WriteString(fmt.Sprintf(` TRIM_SPACE = %v`, fb.trimSpace))
 
 	if len(fb.nullIf) > 0 {
 		nulls := make([]string, len(fb.nullIf))
@@ -116,12 +116,12 @@ func (fb *FileFormatBuilder) Create() string {
 
 // ChangeComment returns the SQL query that will update the comment on the file format.
 func (fb *FileFormatBuilder) ChangeComment(comment string) string {
-	return fmt.Sprintf(`ALTER FILE FORMAT %v SET COMMENT = '%v'`, fb.QualifiedName(), comment)
+	return fmt.Sprintf(`ALTER FILE FORMAT %v SET COMMENT = "%v"`, fb.QualifiedName(), comment)
 }
 
 // ChangeComment returns the SQL query that will update the compression on the file format.
 func (fb *FileFormatBuilder) ChangeCompression(compression string) string {
-	return fmt.Sprintf(`ALTER FILE FORMAT %v SET COMPRESSION = '%v'`, fb.QualifiedName(), compression)
+	return fmt.Sprintf(`ALTER FILE FORMAT %v SET COMPRESSION = "%v"`, fb.QualifiedName(), compression)
 }
 
 // ChangeComment returns the SQL query that will update binary as text on the file format.
